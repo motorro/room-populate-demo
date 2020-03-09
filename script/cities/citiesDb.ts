@@ -25,6 +25,19 @@ function isValidData(city: City): Boolean {
     let validRecords = 0;
     let invalidRecords: Array<number> = [];
 
+    db.serialize();
+    await new Promise<void> (((resolve, reject) => {
+        db.run(
+            "begin transaction",
+            function(err: Error) {
+                if(null != err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            }
+        )
+    }));
     const stmt = await new Promise<Statement> ((resolve, reject) => {
         db.prepare(
             "REPLACE INTO cities VALUES (?,?,?,?,?,?)",
@@ -68,6 +81,28 @@ function isValidData(city: City): Boolean {
     console.log("Cities populated.");
     console.log(`Valid records: ${validRecords}`);
     console.log(`Invalid records (${invalidRecords.length}):`, invalidRecords);
-    stmt.finalize();
+    await new Promise<void> (((resolve, reject) => {
+        stmt.finalize(
+            function(err: Error) {
+                if(null != err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            }
+        )
+    }));
+    await new Promise<void> (((resolve, reject) => {
+        db.run(
+            "commit",
+            function(err: Error) {
+                if(null != err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            }
+        )
+    }));
 }
 

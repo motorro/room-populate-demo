@@ -6,15 +6,15 @@ import * as fs from "fs"
 /**
  * DB schema path
  */
-const SCHEMA_PATH = path.join(__dirname, "..", "data", "schemas", "com.motorro.roompopulate.app.cities.CitiesDb");
+const SCHEMA_PATH = path.join(__dirname, "..", "android", "app", "schemas", "com.motorro.roompopulate.cities.CitiesDb");
 /**
  * DB destination file
  */
-const DST_PATH = path.join(__dirname, "..", "app", "src", "main", "assets", "databases", "cities.db");
+const DST_PATH = path.join(__dirname, "..", "android", "app", "src", "main", "assets", "databases", "cities.db");
 /**
  * DB version file
  */
-const VERSION_PATH = path.join(__dirname, "..", "app", "gradle.properties");
+const VERSION_PATH = path.join(__dirname, "..", "android", "app", "gradle.properties");
 /**
  * DB version key
  */
@@ -33,7 +33,7 @@ interface Args extends ParsedArgs {
  * @param key Key to set version to
  */
 function incrementDatabaseVersion(file: string, key: string) {
-    const versionRegex = new RegExp(`${key}\s*=\s*(\d+)`);
+    const versionRegex = new RegExp(`${key}\\s*=\\s*(\\d+)`, "gi");
     let contents = fs.readFileSync(file, "utf8");
     const matches = versionRegex.exec(contents);
     if (null === matches) {
