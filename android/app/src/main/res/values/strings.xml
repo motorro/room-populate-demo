@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Room-populate</string>
+    <string name="search_hint">Enter city name to search</string>
 </resources>
