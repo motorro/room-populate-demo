@@ -17,7 +17,7 @@ class CityListAdapter(private val selectionListener: (city: Coord) -> Unit): Rec
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CityViewHolder {
         val inflater = LayoutInflater.from(parent.context)
-        val binding = ItemCityBinding.inflate(inflater)
+        val binding = ItemCityBinding.inflate(inflater, parent, false)
         val viewHolder = CityViewHolder(binding)
         binding.root.setOnClickListener {
             selectionListener(viewHolder.coord)
