@@ -26,74 +26,62 @@ package com.motorro.roompopulate
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.room.Room
 import com.motorro.roompopulate.cities.CitiesDb
 import com.motorro.roompopulate.cities.data.City
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.disposables.Disposable
-import io.reactivex.schedulers.Schedulers
-import io.reactivex.subjects.PublishSubject
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
 
 /**
  * Performs city search
  */
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 class MainActivityModel(application: Application): AndroidViewModel(application) {
-    private var subscription: Disposable
-    private val searchSubject = PublishSubject.create<String>()
+    private val searchSubject = MutableStateFlow("")
+    val db = Room
+        .databaseBuilder(getApplication(), CitiesDb::class.java, "cities.db")
+        // Set asset-file to copy database from
+        .createFromAsset("databases/cities.db")
+        // How the database gets copied over:
+        // 1. Every time the import script is run - the database version increases in BuildConfig
+        // 2. The local database (if already there) is verified to have the same version
+        // 3. As we have a version greater the migration is performed
+        // 4. We don't supply any migration (fallbackToDestructiveMigration)
+        //    so the file gets copied over
+        .fallbackToDestructiveMigration()
+        .build()
 
     /**
      * Search
      */
     fun search(string: String) {
-        searchSubject.onNext(string)
+        searchSubject.value = string
     }
 
     /**
      * Search results
      */
-    val cities = MutableLiveData<List<City>>()
-
-    init {
-        // Database engine
-        val db = Room
-            .databaseBuilder(getApplication(), CitiesDb::class.java, "cities.db")
-            // Set asset-file to copy database from
-            .createFromAsset("databases/cities.db")
-            // How the database gets copied over:
-            // 1. Every time the import script is run - the database version increases in BuildConfig
-            // 2. The local database (if already there) is verified to have the same version
-            // 3. As we have a version greater the migration is performed
-            // 4. We don't supply any migration (fallbackToDestructiveMigration)
-            //    so the file gets copied over
-            .fallbackToDestructiveMigration()
-            .build()
-
-        subscription = searchSubject
-            .debounce(300L, TimeUnit.MILLISECONDS, Schedulers.computation())
-            .filter { it.isNotBlank() }
-            .switchMap {
-                Observable
-                    .fromCallable { db.citiesDao().searchByString("$it%", 30) }
-                    .subscribeOn(Schedulers.computation())
+    val cities = searchSubject
+        .debounce(300L)
+        .filter { it.isNotBlank() }
+        .mapLatest {
+            withContext(Dispatchers.IO) {
+                db.citiesDao().searchByString("$it%", 30)
             }
-            .observeOn(AndroidSchedulers.mainThread())
-            .subscribe(
-                { searchResult -> cities.value = searchResult },
-                { error -> throw error }
-            )
-    }
+        }
 
-    /**
-     * This method will be called when this ViewModel is no longer used and will be destroyed.
-     */
     override fun onCleared() {
-        super.onCleared()
-        subscription.dispose()
+        db.close()
     }
 }

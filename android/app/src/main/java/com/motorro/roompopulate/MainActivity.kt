@@ -30,12 +30,16 @@ import android.os.Bundle
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.widget.doAfterTextChanged
+import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.Observer
+import androidx.lifecycle.lifecycleScope
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.motorro.roompopulate.cities.data.Coord
 import com.motorro.roompopulate.databinding.ActivityMainBinding
 import com.motorro.roompopulate.view.CityListAdapter
+import kotlinx.coroutines.launch
 import java.util.*
 
 
@@ -53,7 +57,13 @@ class MainActivity : AppCompatActivity() {
         setupSearch()
         setupList()
 
-        model.cities.observe(this, Observer { listAdapter.cities = it })
+        lifecycleScope.launch {
+            repeatOnLifecycle(Lifecycle.State.STARTED) {
+                model.cities.collect {
+                    listAdapter.cities = it
+                }
+            }
+        }
     }
 
     /**

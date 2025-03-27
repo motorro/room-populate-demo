@@ -30,8 +30,13 @@ import java.util.*
 
 class DataConverters {
     @TypeConverter
-    fun countryCodeFromString(value: String?): CountryCode? = value?.let { CountryCode.getByAlpha2Code(it.toUpperCase(
-        Locale.US)) }
+    fun countryCodeFromString(value: String?): CountryCode? = value?.let {
+        CountryCode.getByAlpha2Code(
+            it.uppercase(
+                Locale.US
+            )
+        )
+    }
 
     @TypeConverter
     fun countryCodeToString(value: CountryCode?): String? = value?.alpha2
